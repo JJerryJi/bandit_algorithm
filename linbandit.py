@@ -42,8 +42,6 @@ def update_v_pi(pi, A):
 # output: return Pi 
 def g_optimal_design(A):
     # A contains only one arm 
-    if len(A) == 1:
-        return []
     pi = np.full(len(A), 1/len(A))
     v_pi = update_v_pi(pi, A) 
     while np.max([np.dot(a.T, np.linalg.inv(v_pi), a)for a in A]) > (1 + .01) * n_features:
@@ -70,18 +68,14 @@ def g_optimal_design(A):
 
 l = 1 
 A1 = X
-T = 1000
+T = 3000
 t = 1
 reg = 0
-while t< T:
+while t < T:
     # step 1
     pi = g_optimal_design(A1)
-    # stopping condition
-    if pi == []:
-        break
-    print("here is pi")
-    print(pi)
-    print()
+    # print("here is pi")
+    # print(pi)
     epsilon_l = 2 ** (-l)
 
     # step 2
@@ -102,21 +96,16 @@ while t< T:
             noise = np.random.normal(0.0, 1.0)
             r_t = np.dot(np.transpose(A1[i]), theta_star) + noise
             t+=1
-
             optimal_reward = max([np.dot(np.transpose(a), theta_star) for a in A1])
-            print(f"best reward: {optimal_reward}")
+            # print(f"best reward: {optimal_reward}")
             reg += optimal_reward - np.dot(np.transpose(A1[i]), theta_star)
-            print(f'the reg is {reg/(math.sqrt(T) * math.log(T))}')
+            # print(f'the reg is {reg/(math.sqrt(T) * math.log(T))}')
             temp+= A1[i] * r_t 
 
         # print(V_l_inverse)
         # print(temp)
         theta_hat =  np.dot(V_l_inverse, temp.reshape(-1, 1)).reshape(1, -1)
-        # print(theta_hat)
-        # print()
-        #     print(r_t)
-
-
+        # print(r_t)
 
         # step 5
         res = []
@@ -127,12 +116,17 @@ while t< T:
                 res.append(a)
         
     A1 = np.array(res)
+
+    if len(A1) == 1:
+        print(t)
+        break
     print("A1 is updated")
     print(A1)
     # step 6 
     l += 1
 
 
+ 
 while t<T:
     optimal_reward = max([np.dot(np.transpose(a), theta_star) for a in A1])
     # print(f"best reward: {optimal_reward}")
