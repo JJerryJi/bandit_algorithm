@@ -71,12 +71,11 @@ class linBand():
         return self.x_t
     
     def feed_reward(self, r_t):
-        self.v += self.x_t * self.x_t.reshape(-1,1)
+        # self.v += self.x_t * self.x_t.reshape(-1,1)
+        self.v += np.outer(self.x_t, self.x_t)
         self.v_inv = np.linalg.inv(self.v)
         self.b += self.x_t * r_t  
         self.theta_hat = np.linalg.lstsq(self.v, self.b, rcond=None)[0]
-        
-    # def calculate_regret(self, theta_star):
         
 
 
@@ -88,39 +87,40 @@ Bandit = linBand(X,T)
 
 print()
 
-# for t in range(1, T):
-#     A_t = action_sets[np.random.randint(0, num_action_list)]
+
+for t in range(1, T):
+    A_t = action_sets[np.random.randint(0, num_action_list)]
     
-#     # print(A_t)
-#     # best action is selected
-#     x_t = Bandit.run()
+    # print(A_t)
+    # best action is selected
+    x_t = Bandit.run()
 
-#     theta_t = g_theta_inverse(x_t, X_)
-#     # print(theta_t)
+    theta_t = g_theta_inverse(x_t, X_)
+    # print(theta_t)
 
-#     # a_t
-#     idx = np.argmax(np.dot(np.transpose(a), theta_t) for a in A_t)
-#     a_t = A_t[idx]
-#     # print(a_t)
-#     #reward is generate hered: 
-#     noise = np.random.normal(0.0, 1.0)
-#     r_t = np.dot(np.transpose(a_t), theta_star) + noise
+    # a_t
+    idx = np.argmax(np.dot(np.transpose(a), theta_t) for a in A_t)
+    a_t = A_t[idx]
+    # print(a_t)
+    #reward is generate hered: 
+    noise = np.random.normal(0.0, 1.0)
+    r_t = np.dot(np.transpose(a_t), theta_star) + noise
 
-#     # print(r_t)
-#     Bandit.feed_reward(r_t)
+    # print(r_t)
+    Bandit.feed_reward(r_t)
 
-#     # optimal reward
-#     optimal_reward = max([np.dot(np.transpose(a), theta_star) for a in A_t])
-#     # print(f"best reward: {optimal_reward}")
-#     reg += optimal_reward - np.dot(np.transpose(a_t), theta_star)
+    # optimal reward
+    optimal_reward = max([np.dot(np.transpose(a), theta_star) for a in A_t])
+    # print(f"best reward: {optimal_reward}")
+    reg += optimal_reward - np.dot(np.transpose(a_t), theta_star)
 
-#     pbar.update(1)
+    pbar.update(1)
 
-# print(f'the reg is {reg/(math.sqrt(T) * math.log(T))}')
-
-
+print(f'the reg is {reg/(math.sqrt(T) * math.log(T))}')
 
 print()
+pbar2 = tqdm(total=T - 1, desc="Training Progress", unit="iteration")
+
 
 Bandit2 = linBand(X,T)
 reg = 0
@@ -142,7 +142,7 @@ for t in range(1, T):
     # print(f"best reward: {optimal_reward}")
     reg += optimal_reward - np.dot(np.transpose(a_t), theta_star)
     # print(reg)
-    pbar.update(1)
+    pbar2.update(1)
 
     
 
