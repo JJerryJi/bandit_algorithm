@@ -6,8 +6,8 @@ n_arms = 10
 n_theta = 3
 n_features = 2
 num_action_list = 500
-np.random.seed(42)
 
+# np.random.seed(45)
 
 
 reg = 0
@@ -20,6 +20,11 @@ for i in range(num_action_list):
     norm = np.linalg.norm(action_sets[i])
     action_sets[i] /= norm
 
+# print("Action set:")
+# print(action_sets)
+# print("Thete")
+# print(theta_capital)
+# print("end")
 def g_theta(theta):
     # initialize g_theta
     g_theta = np.zeros(n_features)
@@ -41,7 +46,7 @@ X = np.array([g_theta(a) for a in theta_capital])
 # print(X)
 # print()
 X_ = np.array([[v, g_theta(v)] for v in theta_capital])
-print(X_)
+# print(X_)
 
 
 class linBand():
@@ -79,33 +84,38 @@ class linBand():
         
 
 
-T = 100000
+T = 10000
 # Initialize tqdm with the total number of iterations (T-1)
 pbar = tqdm(total=T - 1, desc="Training Progress", unit="iteration")
 
 Bandit = linBand(X,T)
 
-print()
+# print()
 
 
 for t in range(1, T):
-    A_t = action_sets[np.random.randint(0, num_action_list)]
-    
     # print(A_t)
-    # best action is selected
+    # the action is selected
     x_t = Bandit.run()
-
+    # print('the selected action is: ', x_t)
     theta_t = g_theta_inverse(x_t, X_)
-    # print(theta_t)
+    # print('the associated t is: ', theta_t)
 
     # a_t
-    idx = np.argmax(np.dot(np.transpose(a), theta_t) for a in A_t)
+    # avg_action = np.zeros_like(x_t)
+    # num_iter = 1000000
+    # for i in range(num_iter):
+    A_t = action_sets[np.random.randint(0, num_action_list)]
+    idx = np.argmax([np.dot(np.transpose(a), theta_t) for a in A_t])
     a_t = A_t[idx]
+        # avg_action += a_t/num_iter
     # print(a_t)
+    # print("avg, action: ", avg_action,x_t,g_theta(theta_t))
+
     #reward is generate hered: 
     noise = np.random.normal(0.0, 1.0)
+    # r_t = np.dot(np.transpose(a_t), theta_star) + noise
     r_t = np.dot(np.transpose(a_t), theta_star) + noise
-
     # print(r_t)
     Bandit.feed_reward(r_t)
 
@@ -116,9 +126,9 @@ for t in range(1, T):
 
     pbar.update(1)
 
-print(f'the reg is {reg/(math.sqrt(T) * math.log(T))}')
+print(f'the reg is {reg/(math.sqrt(T))}')
 
-print()
+
 pbar2 = tqdm(total=T - 1, desc="Training Progress", unit="iteration")
 
 
@@ -145,5 +155,5 @@ for t in range(1, T):
     pbar2.update(1)
 
     
-
-print(f'the reg is {reg/(math.sqrt(T) * math.log(T))}')
+print()
+print(f'the reg is {reg/(math.sqrt(T))}')
