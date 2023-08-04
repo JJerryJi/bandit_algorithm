@@ -20,27 +20,28 @@ class linBand():
         self.b = np.zeros(self.n_features)
         self.X = action_set
 
-    '''
-    UCB():
-        @param:
-            x: an action
-        output: return the reward of the input action by Upper-confidence-bound method
-    '''
     def UCB(self, x):
+        '''
+        UCB():
+            @param:
+            x: an action
+            output: return the reward of the input action by Upper-confidence-bound method
+        '''
         x_transpose = np.transpose(x)
         product = np.dot(x_transpose, self.theta_hat)
         sqrt_term = np.sqrt(np.dot(np.dot(x_transpose, self.v_inv), x))
         ucb = product + 4 * sqrt_term * math.log(self.T)
         return ucb
 
-    '''
-    run():
-        @param:
-            action_set(optional): only the original algorithm  will provide action_set
 
-        output: return the selected action by calling UCB() method
-    '''
     def run(self, action_set=None):
+        '''
+        run():
+            @param:
+                action_set(optional): only the original algorithm  will provide action_set
+
+            output: return the selected action by calling UCB() method
+        '''
         if action_set is not None:
                 self.X = action_set
         idx = np.argmax([self.UCB(x) for x in self.X])
@@ -48,26 +49,26 @@ class linBand():
         self.x_t = self.X[idx]
         return self.x_t
         
-    '''
-    feed_reward():
-        @param: 
-            r_t: reward for the current action 
 
-        output: update v, b, and theta_hat; no return  
-    '''
     def feed_reward(self, r_t):
+        '''
+        feed_reward():
+            @param: 
+            r_t: reward for the current action 
+            output: update v, b, and theta_hat; no return  
+        '''
         self.v += np.outer(self.x_t, self.x_t)
         self.v_inv = np.linalg.inv(self.v)
         self.b += self.x_t * r_t
         self.theta_hat = np.linalg.lstsq(self.v, self.b, rcond=None)[0]
 
 
-'''
-g_theta(theta): Reduction Algorithm 
-    @param: theta 
-    output: to generate fix action set
-'''
 def g_theta(theta):
+    '''
+    g_theta(theta): Reduction Algorithm 
+        @param: theta 
+        output: to generate fix action set
+    '''
     # initialize g_theta
     g_theta = np.zeros(n_features)
     # iterate through each arm in action_sets
@@ -78,19 +79,18 @@ def g_theta(theta):
         g_theta += action_sets[i][best_action] * (1 / num_action_list)
     return g_theta
 
-'''
-g_theta_inverse(x_t, X_): 
-    @param: x_t, X_
-        x_t: g(theta) 
-        X_:  look-up table
-    output: the theta that's associated with g(theta)
-'''
 def g_theta_inverse(x_t, X_):
+    '''
+    g_theta_inverse(x_t, X_): 
+        @param: x_t, X_
+            x_t: g(theta) 
+            X_:  look-up table
+        output: the theta that's associated with g(theta)
+    '''
     for v, g in X_:
         if np.array_equal(g, x_t):
             return v
     return None
-
 
 
 # reg1: the regret of reduction algorithm 
@@ -99,7 +99,7 @@ reg1 = 0
 reg2 = 0
 T = 10000
 
-iterations = 1
+iterations = 3
 
 list_reg1 = []
 list_reg2 = []

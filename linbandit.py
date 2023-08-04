@@ -9,7 +9,6 @@ np.random.seed(42)
 action_sets = np.random.normal(0, 1, (num_action_list, n_arms, n_features))
 theta_capital = np.random.normal(0, 1, (n_theta, n_features))
 
-
 # Normalize the action_sets array in place
 for i in range(num_action_list):
     for arm in range(n_arms):
@@ -46,7 +45,6 @@ print()
 def update_v_pi(pi, A):
     v_pi = 0.001*np.eye(n_features)
     for i in range(len(A)):
-        # v_pi += A[i] * A[i].reshape(-1, 1) * pi[i] 
         v_pi += np.outer(A[i], A[i]) * pi[i] 
     return v_pi
 
@@ -63,8 +61,6 @@ def g_optimal_design(A):
         # find ak
         idx = np.argmax([np.dot(np.dot(a.T, np.linalg.inv(v_pi)), a)for a in A])
         a_k = A[idx]
-        # print('here is a_k')
-        # print(a_k)
 
         # find gamma_k 
         numerator= (1/n_features) * np.dot(np.dot(a_k.T, np.linalg.inv(v_pi)), a_k) - 1
@@ -74,8 +70,6 @@ def g_optimal_design(A):
         #update pi
         pi *= (1-gamma_k) 
         pi[idx] += gamma_k
-        # print('here is pi:')
-        # print(pi)
 
         #update v_pi:
         v_pi = update_v_pi(pi, A) 
@@ -89,8 +83,6 @@ reg = 0
 while t < T:
     # step 1
     pi = g_optimal_design(A1)
-    # print("here is pi")
-    # print(pi)
     epsilon_l = 2 ** (-l)
 
     # step 2
@@ -105,9 +97,6 @@ while t < T:
             V_l += np.outer(A1[j], A1[j]) * T_l[j]
         
         
-
-
-
         temp = np.zeros(n_features)
         for _ in range(T_l[i]):
             noise = np.random.normal(0.0, 1.0)
@@ -115,7 +104,6 @@ while t < T:
             t+=1
             # if t exceeds the number of trials, stops here
             if t >= T:
-                print('t is larger than T. Maybe T should be set larger')
                 break
             optimal_reward = max([np.dot(np.transpose(a), theta_star) for a in A1])
             # print(f"best reward: {optimal_reward}")
@@ -125,11 +113,9 @@ while t < T:
 
         if t >= T:
             break
-        # print(V_l_inverse)
-        # print(temp)
+
         V_l_inverse = np.linalg.inv(V_l)
         theta_hat =  np.dot(V_l_inverse, temp.reshape(-1, 1)).reshape(1, -1)
-        # print(r_t)
 
         # step 5
         res = []
@@ -141,11 +127,12 @@ while t < T:
         
         A1 = np.array(res)
 
-    if len(A1) == 1:
-        print('A1 is one now: ', t)
-        break
+        if len(A1) == 1:
+            print('A1 is one now: ', t)
+            break
     print("A1 is updated")
     print(A1)
+    
     # step 6 
     l += 1
 
@@ -157,5 +144,3 @@ while t<T:
     reg += optimal_reward - np.dot(np.transpose(A1[0]), theta_star)
     print(f'the reg is {reg/(math.sqrt(T) * math.log(T))}')
     t+=1
-
-print(A1)
