@@ -3,8 +3,8 @@ import math
 import matplotlib.pyplot as plt
 
 # initialization of settings: 
-n_arms = 3
-n_theta = 4
+n_arms = 500
+n_theta = 3
 n_features = 5
 num_action_list = 100
 
@@ -99,7 +99,7 @@ reg1 = 0
 reg2 = 0
 T = 10000
 
-iterations = 20
+iterations = 1
 
 list_reg1 = []
 list_reg2 = []
@@ -109,10 +109,9 @@ for i in range(iterations):
     print('Progress:', (i+1)/iterations)
 
     reg = 0
-    theta_capital = np.random.uniform(-1, 1, (n_theta, n_features))
-    action_sets = np.random.uniform(-1, 1,
+    theta_capital = np.random.normal(0, 1, (n_theta, n_features))
+    action_sets = np.random.normal(0, 1,
                                     (num_action_list, n_arms, n_features))
-
     # Normalize the action_sets array in place
     for i in range(num_action_list):
         for arm in range(n_arms):
@@ -213,8 +212,10 @@ def calculate_avg_regret_list(ls):
 avg_reg1 = calculate_avg_regret_list(list_reg1)
 avg_reg2 = calculate_avg_regret_list(list_reg2)
 
+# sanity check
 assert(len(avg_reg1) == T)
 assert(len(avg_reg2) == T)
+
 print(f'the reduction reg is {reg1/(math.sqrt(T))}',
       f'the original reg is {reg2/(math.sqrt(T))}')
 
@@ -224,7 +225,7 @@ print(f'the reduction reg is {reg1/(math.sqrt(T))}',
 time = list(range(len(avg_reg1)))
 
 # Plotting avg_reg1
-# plt.plot(time, avg_reg1, label='Reduction Regret', color='blue')
+plt.plot(time, avg_reg1, label='Reduction Regret', color='blue')
 
 # Plotting avg_reg2
 plt.plot(time, avg_reg2, label='Original Regret', color='orange')
@@ -234,10 +235,12 @@ plt.xlabel('Time')
 plt.ylabel('Regret/sqrt T')
 plt.title('Average Regret over Time')
 plt.legend()
-plt.grid(True)
+
+# Add a grid
+plt.grid(True)  # This line adds a grid to the plot
 
 # Save the plot to a file (change the filename and format as needed)
-plt.savefig(f'regret_plot_uniform{T}_{n_features}.png')
+plt.savefig(f'N_T{T}_f-{n_features}_arms-{n_arms}_nal-{num_action_list}-I{iterations}_theta{n_theta}.png')
 
 # Display the plot
 plt.show()
