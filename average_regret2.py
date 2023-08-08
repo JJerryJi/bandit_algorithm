@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 
 # initialization of settings: 
 n_arms = 500
-n_theta = 3
+n_theta = 50
 n_features = 5
-num_action_list = 100
+num_action_list = 5000
 
 class linBand():
     def __init__(self, action_set, T):
@@ -97,7 +97,7 @@ def g_theta_inverse(x_t, X_):
 # reg2: the regret of original algorithm
 reg1 = 0
 reg2 = 0
-T = 10000
+T = 100000
 
 iterations = 3
 

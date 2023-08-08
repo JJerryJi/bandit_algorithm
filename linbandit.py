@@ -86,18 +86,15 @@ while t < T:
     epsilon_l = 2 ** (-l)
 
     # step 2
-    T_l =  np.array([math.ceil(2 * n_features * pi[i] / (epsilon_l*epsilon_l) * math.log(n_theta * l*(l+1) * t)) for i in range (len(A1))])
+    T_l =  np.array([math.ceil(2 * n_features * pi[i] / (epsilon_l*epsilon_l) * math.log(n_theta * l*(l+1) * T)) for i in range (len(A1))])
     # print(T_l)
 
-    # step 3 & step 4
+    # step 3 
+    V_l = np.zeros((n_features, n_features))
+    temp = np.zeros(n_features)
+
     for i in range (len(A1)):
-        # calculate V_l:
-        V_l = np.zeros((n_features, n_features))
-        for j in range(len(A1)):
-            V_l += np.outer(A1[j], A1[j]) * T_l[j]
-        
-        
-        temp = np.zeros(n_features)
+        V_l += np.outer(A1[i], A1[i]) * T_l[i] 
         for _ in range(T_l[i]):
             noise = np.random.normal(0.0, 1.0)
             r_t = np.dot(np.transpose(A1[i]), theta_star) + noise
@@ -113,23 +110,23 @@ while t < T:
 
         if t >= T:
             break
+    # step 4
+    V_l_inverse = np.linalg.inv(V_l)
+    theta_hat =  np.dot(V_l_inverse, temp.reshape(-1, 1)).reshape(1, -1)
 
-        V_l_inverse = np.linalg.inv(V_l)
-        theta_hat =  np.dot(V_l_inverse, temp.reshape(-1, 1)).reshape(1, -1)
+    # step 5
+    res = []
+    for a in A1:
+        if any(np.array_equal(row, a) for row in res): continue 
 
-        # step 5
-        res = []
-        for a in A1:
-            if any(np.array_equal(row, a) for row in res): continue 
-
-            if max([np.dot(theta_hat, b-a)for b in A1]) <= 2 * epsilon_l:
-                res.append(a)
+        if max([np.dot(theta_hat, b-a)for b in A1]) <= 2 * epsilon_l:
+            res.append(a)
         
-        A1 = np.array(res)
+    A1 = np.array(res)
 
-        if len(A1) == 1:
-            print('A1 is one now: ', t)
-            break
+    if len(A1) == 1:
+        print('A1 is one now: ', t)
+        break
     print("A1 is updated")
     print(A1)
     
