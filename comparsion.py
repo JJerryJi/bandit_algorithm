@@ -351,7 +351,7 @@ plt.grid(True)  # This line adds a grid to the plot
 
 # Save the plot to a file (change the filename and format as needed)
 plt.savefig(
-    f'Comparsion{T}_f-{n_features}_arms-{n_arms}_nal-{num_action_list}-I{iterations}_theta{n_theta}.svg',  format="svg")
+    f'result/Comparsion{T}_f-{n_features}_arms-{n_arms}_nal-{num_action_list}-I{iterations}_theta{n_theta}.svg',  format="svg")
 
 # Display the plot
 plt.show()
