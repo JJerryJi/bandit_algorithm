@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # initialization of settings:
 n_arms = 500
-n_theta = 50
+n_theta = 1000
 n_features = 5
 num_action_list = 200
 
@@ -105,7 +105,7 @@ class phase_elimination():
         # caculate T_l[], V_l, product_At_r_t
         pi = g_optimal_design(self.A.copy())
         self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (epsilon_l*epsilon_l)
-                            * math.log(n_theta * l*(l+1) * T)) for i in range(len(self.A))])
+                            * math.log(n_theta * l*(l+1) * self.T)) for i in range(len(self.A))])
         self.V_l = self.calculate_V_l()
         self.product_At_r_t = np.zeros(n_features)
         # empirical estimate
