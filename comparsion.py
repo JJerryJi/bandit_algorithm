@@ -3,8 +3,8 @@ import math
 import matplotlib.pyplot as plt
 
 # initialization of settings:
-n_arms = 500
-n_theta = 1000
+n_arms = 100
+n_theta = 100
 n_features = 5
 num_action_list = 200
 
@@ -105,7 +105,7 @@ class phase_elimination():
         # caculate T_l[], V_l, product_At_r_t
         pi = g_optimal_design(self.A.copy())
         self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (epsilon_l*epsilon_l)
-                            * math.log(n_theta * l*(l+1) * self.T)) for i in range(len(self.A))])
+                            * math.log(n_theta * l*(l+1) * T)) for i in range(len(self.A))])
         self.V_l = self.calculate_V_l()
         self.product_At_r_t = np.zeros(n_features)
         # empirical estimate
@@ -208,17 +208,20 @@ def g_theta_inverse(x_t, X_):
 # reg2: the regret of original algorithm
 reg1 = 0
 reg2 = 0
-T = 50000
+reg3 = 0
+T = 10000
 
-iterations = 10
+iterations = 3
 
 list_reg1 = []
 list_reg2 = []
+list_reg3 = []
 
 for i in range(iterations):
     # to show progress:
     print('Progress:', (i+1)/iterations)
 
+    # INITALIZATION: 
     reg = 0
     theta_capital = np.random.normal(0, 1, (n_theta, n_features))
     action_sets = np.random.normal(0, 1,
@@ -241,7 +244,7 @@ for i in range(iterations):
     # look-up table between each theta and the generated action
     X_ = np.array([[v, g_theta(v)] for v in theta_capital])
 
-    # Bandit Instance for Reduction Case:
+    # TEST 1: Phase Elimination Case:
     Bandit = phase_elimination(X, T)
 
     # reg1_t: contains [1*T] regret for reduction case
@@ -269,7 +272,7 @@ for i in range(iterations):
     list_reg1.append(reg1_t)
     reg1 += reg/iterations
 
-    # Bandit Instance for Original Case:
+    # TEST 2: Original Regret without Reduction LinUCB:
     Bandit2 = linBand(X, T)
     # reset regret
     reg = 0
@@ -294,6 +297,35 @@ for i in range(iterations):
 
     list_reg2.append(reg2_t)
     reg2 += reg/iterations
+
+
+    # TEST3: Reduction Regret with LinUCB
+    Bandit = linBand(X, T)
+    reg = 0
+    # reg3_t: contains [1*T] regret for reduction case
+    reg3_t = []
+    for t in range(T):
+        x_t = Bandit.run()
+        theta_t = g_theta_inverse(x_t, X_)
+
+        A_t = action_sets[np.random.randint(0, num_action_list)]
+        idx = np.argmax([np.dot(np.transpose(a), theta_t) for a in A_t])
+        a_t = A_t[idx]
+
+        # reward:
+        noise = np.random.normal(0.0, 1.0)
+        r_t = np.dot(np.transpose(a_t), theta_star) + noise
+        Bandit.feed_reward(r_t)
+
+        # optimal reward:
+        optimal_reward = max(
+            [np.dot(np.transpose(a), theta_star) for a in A_t])
+        reg += optimal_reward - np.dot(np.transpose(a_t), theta_star)
+
+        reg3_t.append(reg)
+
+    list_reg3.append(reg3_t)
+    reg3 += reg/iterations
 
 
 def calculate_avg_regret_list(ls):
@@ -322,28 +354,33 @@ def calculate_avg_regret_list(ls):
 
 avg_reg1 = calculate_avg_regret_list(list_reg1)
 avg_reg2 = calculate_avg_regret_list(list_reg2)
+avg_reg3 = calculate_avg_regret_list(list_reg3)
+
 
 # sanity check
 assert(len(avg_reg1) == T)
 assert(len(avg_reg2) == T)
+assert(len(avg_reg3) == T)
 
-print(f'the reduction reg is {reg1/(math.sqrt(T))}',
-      f'the original reg is {reg2/(math.sqrt(T))}')
+print(f'the reduction reg for phase_elimination is {reg1/(math.sqrt(T))}',
+      f'the original reg is {reg2/(math.sqrt(T))}',
+      f'the orginal reg for linUCB with reduction is {reg3/(math.sqrt(T))}')
 
 
 # Generate X-axis values (time) based on the length of avg_reg1
 time = list(range(len(avg_reg1)))
 
-# Plotting avg_reg1
-plt.plot(time, avg_reg1, label='Reduction Regret', color='blue')
+plt.plot(time, avg_reg1, label='Reduction Regret of Phase Elimination', color='blue')
 
-# Plotting avg_reg2
-plt.plot(time, avg_reg2, label='Original Regret', color='orange')
+plt.plot(time, avg_reg2, label='Original Regret of LinUCB', color='orange')
+
+plt.plot(time, avg_reg3, label='Reduction Regret of LinUCB', color='green')
+
 
 # Adding labels, legend, and title
 plt.xlabel('Time')
 plt.ylabel('Regret/sqrt T')
-plt.title('Average Regret over Time')
+plt.title(f'Average Regret over Time (n_arms={n_arms}, n_theta={n_theta})')
 plt.legend()
 
 # Add a grid
@@ -351,7 +388,7 @@ plt.grid(True)  # This line adds a grid to the plot
 
 # Save the plot to a file (change the filename and format as needed)
 plt.savefig(
-    f'result/Comparsion{T}_f-{n_features}_arms-{n_arms}_nal-{num_action_list}-I{iterations}_theta{n_theta}.svg',  format="svg")
+    f'result/Comparsion3{T}_f-{n_features}_arms-{n_arms}_nal-{num_action_list}-I{iterations}_theta{n_theta}.png', dpi=600)
 
 # Display the plot
 plt.show()
