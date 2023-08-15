@@ -3,8 +3,8 @@ import math
 import matplotlib.pyplot as plt
 
 # initialization of settings:
-n_arms = 100
-n_theta = 100
+n_arms = 500
+n_theta = 500
 n_features = 5
 num_action_list = 200
 
@@ -65,26 +65,21 @@ class linBand():
 def update_v_pi(pi, A):
     v_pi = 0.001*np.eye(n_features)
     for i in range(len(A)):
-        v_pi += np.outer(A[i], A[i]) * pi[i]
+        v_pi += np.outer(A[i], A[i]) * pi[i] 
     return v_pi
 
 # input: A: action set
 # output: return Pi
-
-
 def g_optimal_design(A):
-    # A contains only one arm
     pi = np.full(len(A), 1/len(A))
-    v_pi = update_v_pi(pi, A)
-    while np.max([np.dot(a.T, np.linalg.inv(v_pi), a)for a in A]) > (1 + .01) * n_features:
+    v_pi = update_v_pi(pi, A) 
+    while np.max([np.dot(np.dot(a.T, np.linalg.inv(v_pi)), a)for a in A]) > (1 + .01) * n_features:
         # find ak
-        idx = np.argmax(
-            [np.dot(np.dot(a.T, np.linalg.inv(v_pi)), a)for a in A])
+        idx = np.argmax([np.dot(np.dot(a.T, np.linalg.inv(v_pi)), a)for a in A])
         a_k = A[idx]
 
-        # find gamma_k
-        numerator = (1/n_features) * \
-            np.dot(np.dot(a_k.T, np.linalg.inv(v_pi)), a_k) - 1
+        # find gamma_k 
+        numerator= (1/n_features) * np.dot(np.dot(a_k.T, np.linalg.inv(v_pi)), a_k) - 1
         denominator = np.dot(np.dot(a_k.T, np.linalg.inv(v_pi)), a_k) - 1
         gamma_k = numerator / denominator
 
@@ -92,20 +87,19 @@ def g_optimal_design(A):
         pi *= (1-gamma_k)
         pi[idx] += gamma_k
 
-        # update v_pi:
-        v_pi = update_v_pi(pi, A)
+        #update v_pi:
+        v_pi = update_v_pi(pi, A) 
     return pi
 
 
 class phase_elimination():
-    def __init__(self, action_set, T, l=1, epsilon_l=2**(-1)) -> None:
+    def __init__(self, action_set, T, l= 1, epsilon_l=2**(-1)) -> None:
         self.A = action_set
-        # keep track which action to play
+        # keep track which action to play 
         self.cur_action_idx = 0
         # caculate T_l[], V_l, product_At_r_t
-        pi = g_optimal_design(self.A.copy())
-        self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (epsilon_l*epsilon_l)
-                            * math.log(n_theta * l*(l+1) * T)) for i in range(len(self.A))])
+        pi = g_optimal_design(self.A)
+        self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (epsilon_l*epsilon_l) * math.log(n_theta * l*(l+1) * T)) for i in range (len(self.A))])
         self.V_l = self.calculate_V_l()
         self.product_At_r_t = np.zeros(n_features)
         # empirical estimate
@@ -118,50 +112,47 @@ class phase_elimination():
         # only one arm left
         if len(self.A) == 1:
             return self.A[0]
-
+        
         # Update Everything
         if np.all(self.T_l == 0):
             return None
-
-        # Normal Case:
+        
+        # Normal Case: 
         if self.T_l[self.cur_action_idx] == 0:
-            self.cur_action_idx += 1
-
+            self.cur_action_idx+=1
+        
         self.T_l[self.cur_action_idx] -= 1
 
         # return the chosen action
         return self.A[self.cur_action_idx]
-
+       
     # calcualte the V_l
     def calculate_V_l(self):
         temp = 0.01 * np.eye(n_features)
         for i in range(len(self.A)):
             temp += self.T_l[i] * np.outer(self.A[i], self.A[i])
         return temp
-
+    
     def feed_reward(self, r_t):
         if np.all(self.T_l == 0):
-            # calculate theta_hat:
+            # calculate theta_hat: 
             # print(self.V_l)
             # print(len(self.V_l))
             V_l_inverse = np.linalg.inv(self.V_l)
-            self.theta_hat = np.dot(
-                V_l_inverse, self.product_At_r_t.reshape(-1, 1)).reshape(1, -1)
-            # Eliminate arms:
+            self.theta_hat =  np.dot(V_l_inverse, self.product_At_r_t.reshape(-1, 1)).reshape(1, -1)
+            # Eliminate arms: 
             res = []
             # print(self.A)
             for a in self.A:
-                if any(np.array_equal(row, a) for row in res):
-                    continue
+                if any(np.array_equal(row, a) for row in res): continue 
 
                 if max([np.dot(self.theta_hat, b-a)for b in self.A]) <= 2 * self.epsilon_l:
                     res.append(a)
             self.A = np.array(res)
             # print(self.A)
             # reset T_l, V_l, product-At*rt, cur_action_idx
-            pi = g_optimal_design(self.A.copy())
-            self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (self.epsilon_l*self.epsilon_l)
-                                * math.log(n_theta * self.l*(self.l+1) * self.T)) for i in range(len(self.A))])
+            pi= g_optimal_design(self.A)
+            self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (self.epsilon_l*self.epsilon_l) * math.log(n_theta * self.l*(self.l+1) * T)) for i in range (len(self.A))])
             self.V_l = self.calculate_V_l()
             self.product_At_r_t = np.zeros(n_features)
             self.cur_action_idx = 0
@@ -170,7 +161,7 @@ class phase_elimination():
             self.l += 1
             self.epsilon_l = 2 ** (-self.l)
         else:
-            self.product_At_r_t += self.A[self.cur_action_idx] * r_t
+            self.product_At_r_t += self.A[self.cur_action_idx] * r_t 
 
 
 def g_theta(theta):
@@ -188,7 +179,6 @@ def g_theta(theta):
         # calculate expectation
         g_theta += action_sets[i][best_action] * (1 / num_action_list)
     return g_theta
-
 
 def g_theta_inverse(x_t, X_):
     '''
@@ -209,9 +199,9 @@ def g_theta_inverse(x_t, X_):
 reg1 = 0
 reg2 = 0
 reg3 = 0
-T = 10000
+T = 100000
 
-iterations = 3
+iterations = 1
 
 list_reg1 = []
 list_reg2 = []
@@ -224,8 +214,8 @@ for i in range(iterations):
     # INITALIZATION: 
     reg = 0
     theta_capital = np.random.normal(0, 1, (n_theta, n_features))
-    action_sets = np.random.normal(0, 1,
-                                   (num_action_list, n_arms, n_features))
+    action_sets = np.random.normal(0, 1,(num_action_list, n_arms, n_features))
+
     # Normalize the action_sets array in place
     for i in range(num_action_list):
         for arm in range(n_arms):
@@ -246,7 +236,7 @@ for i in range(iterations):
 
     # TEST 1: Phase Elimination Case:
     Bandit = phase_elimination(X, T)
-
+    
     # reg1_t: contains [1*T] regret for reduction case
     reg1_t = []
     for t in range(T):

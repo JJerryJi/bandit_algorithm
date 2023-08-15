@@ -14,7 +14,7 @@ def g_optimal_design(A):
     # A contains only one arm
     pi = np.full(len(A), 1/len(A))
     v_pi = update_v_pi(pi, A)
-    while np.max([np.dot(a.T, np.linalg.inv(v_pi), a)for a in A]) > (1 + .01) * n_features:
+    while np.max([np.dot(np.dot(a.T, np.linalg.inv(v_pi)), a)for a in A]) > (1 + .01) * n_features:
         # find ak
         idx = np.argmax(
             [np.dot(np.dot(a.T, np.linalg.inv(v_pi)), a)for a in A])
@@ -41,7 +41,7 @@ class phase_elimination():
         # keep track which action to play 
         self.cur_action_idx = 0
         # caculate T_l[], V_l, product_At_r_t
-        pi = g_optimal_design(self.A.copy())
+        pi = g_optimal_design(self.A)
         self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (epsilon_l*epsilon_l) * math.log(n_theta * l*(l+1) * T)) for i in range (len(self.A))])
         self.V_l = self.calculate_V_l()
         self.product_At_r_t = np.zeros(n_features)
@@ -94,7 +94,7 @@ class phase_elimination():
             self.A = np.array(res)
             # print(self.A)
             # reset T_l, V_l, product-At*rt, cur_action_idx
-            pi= g_optimal_design(self.A.copy())
+            pi= g_optimal_design(self.A)
             self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (self.epsilon_l*self.epsilon_l) * math.log(n_theta * self.l*(self.l+1) * self.T)) for i in range (len(self.A))])
             self.V_l = self.calculate_V_l()
             self.product_At_r_t = np.zeros(n_features)
