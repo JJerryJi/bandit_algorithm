@@ -3,8 +3,8 @@ import math
 import matplotlib.pyplot as plt
 
 # initialization of settings:
-n_arms = 500
-n_theta = 500
+n_arms = 100
+n_theta = 100
 n_features = 5
 num_action_list = 200
 
