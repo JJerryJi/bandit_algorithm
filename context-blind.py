@@ -87,6 +87,7 @@ def ExplorationPolicy(Z, T):
         # print('2*W_N Det', 2 * np.linalg.det(W_n))
         # print('DET U', np.linalg.det(U) )
         if np.linalg.det(U) > 2 * np.linalg.det(W_n):
+            print('len(T_n)/m', len(T_n)/m)
             list_T.append(len(T_n)/m)
             list_W.append(W_n)
             # update & reset 
@@ -94,9 +95,16 @@ def ExplorationPolicy(Z, T):
             T_n = []
             W_n = U 
 
-    # update the final T and W 
-    list_T.append(len(T_n)/m)
-    list_W.append(W_n)
+    # fix updating logic
+    print('list_T', len(list_T))
+    print(n-1)
+    if len(list_T) == n-1:
+        print('yes: logic activated')
+        # update the final T and W 
+        list_T.append(len(T_n)/m)
+        list_W.append(W_n)
+    # print(list_W)
+    # print(list_T)
     return list_W, list_T
      
 
@@ -134,9 +142,9 @@ def find_T_tleda(T, M):
     return T_delta, list_T
 
 def natural_elimination(A, delta, theta_hat):
-    # try to prevent empty set:
-    if len(A) == 1:
-        return A
+    # # try to prevent empty set:
+    # if len(A) == 1:
+    #     return A
     delta_inv = np.linalg.inv(delta)
     res = []
     alpha = math.sqrt(50 * math.log(n_arms * T * T * n_features))
@@ -144,17 +152,20 @@ def natural_elimination(A, delta, theta_hat):
     # print('delta', delta)
     # print('theta', theta_hat)
     for a in A: 
+        first_part = np.dot(a.T, theta_hat) + alpha * math.sqrt(np.dot(np.dot(a.T,delta_inv), a))
+        add = True
         for y in A:
-            first_part = np.dot(a.T, theta_hat) + alpha * math.sqrt(np.dot(np.dot(a.T,delta_inv), a))
-            second_part =  np.dot(y.T, theta_hat) - alpha * np.dot(np.dot(y.T,delta_inv), y)
-            if first_part >= second_part:
-                res.append(a)
+            second_part = np.dot(y.T, theta_hat) - alpha * math.sqrt(np.dot(np.dot(y.T,delta_inv), y))
+            if first_part < second_part:
+                add = False
                 break 
+        if add:
+            res.append(a)
     res_array = np.array(res)  
     return res_array
 
 # initalize: 
-T = 10000
+T = 100000
 Lambda = 10/T 
 delta = Lambda * np.eye(n_features) 
 M = math.ceil(math.log(math.log(T)))
@@ -204,16 +215,16 @@ list_theta_hat[1] = np.dot(delta1_inverse, sum([list_r_t[i] * list_y_t[i] for i 
 
 Z = []
 for i in range(math.ceil(T_tleda[0]/2), T_tleda[0]):
-    Z_i = natural_elimination(list_A_t[i], list_delta[1], theta_hat)
+    Z_i = natural_elimination(list_A_t[i], list_delta[1], list_theta_hat[1])
     Z.append(Z_i)
 
 
 # initialzing to be pi_2
 pi_k = ExplorationPolicy(Z, T)
-print(pi_k)
+# print(pi_k)
 end = False 
 for k in range(1, M):
-    for t in range(T_tleda[k-1]+1, T_tleda[k]+1):
+    for t in range(T_tleda[k-1]+1, T_tleda[k]):
         # observe X_t
         A_t = action_sets[np.random.randint(0,num_action_list)]
         # observe X_t
@@ -228,9 +239,9 @@ for k in range(1, M):
             # print(M)
             # print('range', k)
             # print(i, list_theta_hat[i])
-            survivied_vector_set.append(natural_elimination(A_t, list_delta[i], list_theta_hat[i]))
+            survivied_vector_set.append(natural_elimination(list_A_t[i-1], list_delta[i], list_theta_hat[i]))
         # print(survivied_vector_set)
-
+        print(survivied_vector_set)
         for cur_vector in survivied_vector_set[0]:
             # print('current vector', cur_vector)
             count = 0 
@@ -239,14 +250,17 @@ for k in range(1, M):
                     if np.array_equal(vector, cur_vector):
                         count += 1 
                         break
-            # print('count', count)
+            print('count', count)
             if count == len(survivied_vector_set):
                 A_t_k.append(cur_vector)
 
-        # print(len(A_t_k))
+        print(len(A_t_k))
+
         # play the arm with the feature vector y_t given pi_k(A_t_k)
         list_w, list_prob = pi_k
         selected_idx = np.random.choice(len(list_w), p=list_prob)
+        # print(list_w)
+        # print(selected_idx, len(list_w))
         W_j_inv = np.linalg.inv(list_w[selected_idx])
         #featured vector
         selected_idx = np.argmax([np.dot(np.dot(x.T, W_j_inv), x) for x in A_t_k])
@@ -269,7 +283,8 @@ for k in range(1, M):
             end = True
             break
 
-    
+    if end:
+        break
     # print(T_tleda)
     # print(list_T)
     # print(len(list_y_t))
@@ -285,15 +300,14 @@ for k in range(1, M):
     list_theta_hat[k+1] =  np.dot(delta_k_inverse, sum([list_r_t[i] * list_y_t[i] for i in range(T_tleda[k-1]+1, T_tleda[k-1] + list_T[k]//2)]))
     # print(list_theta_hat[k+1])
 
-    if end:
-        break
+
 
     X_k_1 = []
     for t in range(T_tleda[k-1]+1, T_tleda[k-1] + T_tleda[k]//2):
         X_k_1_t = []
         survivied_vector_set2 = []
         for i in range(1, k+1):
-            survivied_vector_set2.append(natural_elimination(A_t, list_delta[i], list_theta_hat[i]))
+            survivied_vector_set2.append(natural_elimination(list_A_t[i-1], list_delta[i], list_theta_hat[i]))
         
         for curr_vector in survivied_vector_set2[0]:
             count = 0
@@ -301,17 +315,18 @@ for k in range(1, M):
                 for vector in set:
                     if np.array_equal(vector, curr_vector):
                         count += 1
+                        break
             if len(survivied_vector_set2) == count:
                 X_k_1_t.append(curr_vector)
+            
         X_k_1.append(X_k_1_t)
-    
-
+    print('here')
     pi_k = ExplorationPolicy(X_k_1, T)
-    print(pi_k)
+    # print(pi_k)
 
 
 print(reg/math.log(T))
-print(list_theta_hat)
+print(list_theta_hat[-1])
 print(theta_star)
 # time = list(range(len(list_reg)))
 # plt.plot(time, list_reg, label='Regret', color='blue')
