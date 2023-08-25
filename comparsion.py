@@ -199,7 +199,7 @@ def g_theta_inverse(x_t, X_):
 reg1 = 0
 reg2 = 0
 reg3 = 0
-T = 100000
+T = 1000000
 
 iterations = 1
 

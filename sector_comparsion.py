@@ -1,12 +1,12 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-
+from equal_sphere import generate_action_sets, find_partition
 # initialization of settings:
-n_arms = 50
-n_theta = 50
-n_features = 5
-num_action_list = 200
+n_arms = 100
+n_theta = 100
+n_features = 4
+num_sector = 20
 
 
 class linBand():
@@ -61,11 +61,13 @@ class linBand():
         self.b += self.x_t * r_t
         self.theta_hat = np.linalg.lstsq(self.v, self.b, rcond=None)[0]
 
+
 def update_v_pi(pi, A):
     v_pi = 0.001*np.eye(n_features)
     for i in range(len(A)):
         v_pi += np.outer(A[i], A[i]) * pi[i] 
     return v_pi
+
 # input: A: action set
 # output: return Pi
 def g_optimal_design(A):
@@ -88,6 +90,7 @@ def g_optimal_design(A):
         #update v_pi:
         v_pi = update_v_pi(pi, A) 
     return pi
+
 
 class phase_elimination():
     def __init__(self, action_set, T, l= 1, epsilon_l=2**(-1)) -> None:
@@ -133,20 +136,16 @@ class phase_elimination():
     def feed_reward(self, r_t):
         if np.all(self.T_l == 0):
             # calculate theta_hat: 
-            # print(self.V_l)
-            # print(len(self.V_l))
             V_l_inverse = np.linalg.inv(self.V_l)
             self.theta_hat =  np.dot(V_l_inverse, self.product_At_r_t.reshape(-1, 1)).reshape(1, -1)
             # Eliminate arms: 
             res = []
-            # print(self.A)
             for a in self.A:
                 if any(np.array_equal(row, a) for row in res): continue 
 
                 if max([np.dot(self.theta_hat, b-a)for b in self.A]) <= 2 * self.epsilon_l:
                     res.append(a)
             self.A = np.array(res)
-            # print(self.A)
             # reset T_l, V_l, product-At*rt, cur_action_idx
             pi= g_optimal_design(self.A)
             self.T_l = np.array([math.ceil(2 * n_features * pi[i] / (self.epsilon_l*self.epsilon_l) * math.log(n_theta * self.l*(self.l+1) * T)) for i in range (len(self.A))])
@@ -161,7 +160,7 @@ class phase_elimination():
             self.product_At_r_t += self.A[self.cur_action_idx] * r_t 
 
 
-def g_theta(theta):
+def g_theta(theta, num_action_list):
     '''
     g_theta(theta): Reduction Algorithm 
         @param: theta 
@@ -196,15 +195,13 @@ def g_theta_inverse(x_t, X_):
 reg1 = 0
 reg2 = 0
 reg3 = 0
-T = 10000
+T = 1000000
 
 iterations = 1
 
 list_reg1 = []
 list_reg2 = []
 list_reg3 = []
-
-num_sectors = 20 
 
 
 for i in range(iterations):
@@ -214,14 +211,16 @@ for i in range(iterations):
     # INITALIZATION: 
     reg = 0
     theta_capital = np.random.normal(0, 1, (n_theta, n_features))
-    action_sets = np.random.normal(0, 1,(num_action_list, n_arms, n_features))
 
-    # Normalize the action_sets array in place
-    for i in range(num_action_list):
-        for arm in range(n_arms):
-            norm = np.linalg.norm(action_sets[i][arm])
-            action_sets[i][arm] /= norm
+    # add action_sets 
+    step_size, num_action_list = find_partition(num_sector, n_features)
+    print('Actual sizze of num_action_list: ', num_action_list)
 
+    action_sets = generate_action_sets(step_size, num_action_list,n_features, n_arms)
+    for action in action_sets:
+        print(action)
+    print('Done for action_sets')
+    # print(action_sets)
     # Normalize theta_captial
     for i in range(n_theta):
         norm = np.linalg.norm(theta_capital[i])
@@ -230,9 +229,9 @@ for i in range(iterations):
     theta_star = theta_capital[np.random.randint(n_theta)]
 
     # fixed action set
-    X = np.array([g_theta(a) for a in theta_capital])
+    X = np.array([g_theta(a, num_action_list) for a in theta_capital])
     # look-up table between each theta and the generated action
-    X_ = np.array([[v, g_theta(v)] for v in theta_capital])
+    X_ = np.array([[v, g_theta(v, num_action_list)] for v in theta_capital])
 
     # TEST 1: Phase Elimination Case:
     Bandit = phase_elimination(X, T)
@@ -378,7 +377,7 @@ plt.grid(True)  # This line adds a grid to the plot
 
 # Save the plot to a file (change the filename and format as needed)
 plt.savefig(
-    f'result/Comparsion3{T}_f-{n_features}_arms-{n_arms}_nal-{num_action_list}-I{iterations}_theta{n_theta}.png', dpi=600)
+    f'result/Comparison_Arm_pulled_from_sector{T}_f-{n_features}_arms-{n_arms}_nal-{num_action_list}-I{iterations}_theta{n_theta}.png', dpi=600)
 
 # Display the plot
 plt.show()
