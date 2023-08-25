@@ -63,14 +63,31 @@ class linBand():
 
 
 def update_v_pi(pi, A):
+    '''
+    update_v_pi()
+    @Params:
+        pi: Probability distribution over action set A.
+        A: Action set with different action vectors.
+    @Return:
+        Updated covariance matrix v_pi.
+    Description:
+        Update the covariance matrix v_pi using weighted action vectors.
+    '''
     v_pi = 0.001*np.eye(n_features)
     for i in range(len(A)):
         v_pi += np.outer(A[i], A[i]) * pi[i] 
     return v_pi
 
-# input: A: action set
-# output: return Pi
 def g_optimal_design(A):
+    '''
+    g_optimal_design()
+    @Params:
+        A: Action set with different action vectors.
+    @Return:
+        Computed probability distribution pi.
+    Description:
+        Design optimal/near-optimal probabilities for actions in A.
+    '''
     pi = np.full(len(A), 1/len(A))
     v_pi = update_v_pi(pi, A) 
     while np.max([np.dot(np.dot(a.T, np.linalg.inv(v_pi)), a)for a in A]) > (1 + .01) * n_features:
